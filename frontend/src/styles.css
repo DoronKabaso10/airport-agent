@@ -108,3 +108,4 @@ blockquote footer { margin-top: 6px; color: var(--ink-2); font-size: 12px; }
   .rail { border-left: 0; border-top: 1px solid var(--line); }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+.warn { margin-top: 6px; font-size: 13px; color: #7a4a10; background: #fdf1de; padding: 6px 10px; border-radius: 4px; }

@@ -8,3 +8,4 @@ mcp>=1.10,<2
 # optional
 pdfplumber>=0.11      # real PDF ingestion for the evidence store
 psycopg[binary]>=3.1  # only if DATABASE_URL points at PostgreSQL
+mcp

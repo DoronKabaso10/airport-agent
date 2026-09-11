@@ -14,6 +14,7 @@ export interface ChatResponse {
   answer: string;
   mode: "gemini" | "offline";
   tool_calls: ToolCall[];
+  warnings: string[];
   state: ChatState;
 }
 export interface AirportKPIs {

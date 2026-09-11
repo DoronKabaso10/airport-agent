@@ -21,6 +21,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+import os
 
 from . import kpi
 from .agent import Agent
@@ -38,7 +39,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Airport Investment Intelligence Agent", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","), allow_methods=["*"], allow_headers=["*"])
 
 
 class ChatRequest(BaseModel):
@@ -48,10 +49,10 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest) -> dict:
-    sid = req.session_id or str(uuid.uuid4())
+    sid = req.session_id if req.session_id in agent.sessions else str(uuid.uuid4())  # unknown ids never adopted
     turn = await agent.ask(sid, req.message)
     return {
-        "session_id": sid, "answer": turn.answer, "mode": turn.mode,
+        "session_id": sid, "answer": turn.answer, "mode": turn.mode, "warnings": turn.warnings,
         "tool_calls": turn.tool_calls,
         "state": {
             "selected_airports": turn.state.selected_airports, "selected_region": turn.state.selected_region,

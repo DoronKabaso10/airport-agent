@@ -6,6 +6,7 @@ interface Message {
   text: string;
   toolCalls?: ToolCall[];
   mode?: string;
+  warnings?: string[];
 }
 
 const DRIVER_LABELS: Record<string, string> = {
@@ -55,7 +56,7 @@ export default function App() {
     try {
       const res: ChatResponse = await sendChat(q, sessionId);
       setSessionId(res.session_id);
-      setMessages((m) => [...m, { role: "agent", text: res.answer, toolCalls: res.tool_calls, mode: res.mode }]);
+      setMessages((m) => [...m, { role: "agent", text: res.answer, toolCalls: res.tool_calls, mode: res.mode, warnings: res.warnings }]);
       setLastCalls(res.tool_calls);
       setFocus(res.state.selected_airports.length ? res.state.selected_airports : res.state.previous_ranking.slice(0, 5));
     } catch (e) {
@@ -94,6 +95,9 @@ export default function App() {
           {messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
               <div className="bubble">{m.text}</div>
+              {m.warnings && m.warnings.length > 0 && (
+                <div className="warn">{m.warnings.join(" ")}</div>
+              )}
               {m.toolCalls && m.toolCalls.length > 0 && (
                 <details className="calls">
                   <summary>{m.toolCalls.length} tool {m.toolCalls.length === 1 ? "call" : "calls"} behind this answer</summary>

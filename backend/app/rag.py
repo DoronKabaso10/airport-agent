@@ -138,6 +138,8 @@ def store() -> VectorStore:
 
 
 def search_evidence(query: str, airport_code: str | None = None, k: int = 4) -> dict:
+    k = max(1, min(int(k), 10))
+    query = str(query)[:1000]
     hits = store().search(query, airport_code, k)
     return {
         "query": query, "airport_code": airport_code, "backend": store().backend,

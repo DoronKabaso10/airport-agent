@@ -189,6 +189,7 @@ def resolve_region(query: str) -> str | None:
 
 
 def get_airport_metrics(codes: list[str]) -> dict:
+    codes = [str(c)[:4] for c in codes][:MAX_CODES]
     kpis = {k.code: k for k in all_airport_kpis()}
     rank = {k.code: i + 1 for i, k in enumerate(kpis.values())}
     out, missing = [], []
@@ -203,7 +204,15 @@ def get_airport_metrics(codes: list[str]) -> dict:
     return {"airports": out, "unknown_codes": missing, "universe_size": len(kpis), "weights": WEIGHTS}
 
 
+SORTABLE = {"expansion_score", "capacity_utilization", "load_factor", "passenger_growth_pct",
+            "avg_delay_min", "on_time_pct", "long_haul_share_pct", "passengers", "passengers_per_gate"}
+MAX_CODES = 10
+
+
 def rank_airports(region: str | None = None, limit: int = 10, sort_by: str = "expansion_score") -> dict:
+    if sort_by not in SORTABLE:
+        return {"error": f"sort_by must be one of {sorted(SORTABLE)}"}
+    limit = max(1, min(int(limit), 50))
     kpis = all_airport_kpis()
     resolved = resolve_region(region) if region else None
     if region and not resolved:
@@ -211,8 +220,6 @@ def rank_airports(region: str | None = None, limit: int = 10, sort_by: str = "ex
                          + ", ".join(sorted({k.region for k in kpis}))}
     pool = [k for k in kpis if not resolved or k.region == resolved]
     if sort_by != "expansion_score":
-        if not hasattr(pool[0], sort_by):
-            return {"error": f"Unknown sort_by '{sort_by}'"}
         pool.sort(key=lambda k: -(getattr(k, sort_by) or 0))
     rows = []
     for i, k in enumerate(pool[:limit]):
