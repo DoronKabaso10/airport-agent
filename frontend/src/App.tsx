@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AirportKPIs, ChatResponse, ToolCall, fetchHealth, fetchRankings, sendChat } from "./api";
+import { useVoice } from "./voice";
 
 interface Message {
   role: "user" | "agent";
@@ -36,6 +37,7 @@ export default function App() {
   const [focus, setFocus] = useState<string[]>([]);
   const [lastCalls, setLastCalls] = useState<ToolCall[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
+  const voice = useVoice();
 
   useEffect(() => {
     fetchHealth().then((h) => setMode(h.mode)).catch(() => setMode("unreachable"));
@@ -57,12 +59,24 @@ export default function App() {
       const res: ChatResponse = await sendChat(q, sessionId);
       setSessionId(res.session_id);
       setMessages((m) => [...m, { role: "agent", text: res.answer, toolCalls: res.tool_calls, mode: res.mode, warnings: res.warnings }]);
+      voice.speak(res.answer);
       setLastCalls(res.tool_calls);
       setFocus(res.state.selected_airports.length ? res.state.selected_airports : res.state.previous_ranking.slice(0, 5));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onMic() {
+    if (voice.listening) { voice.stopListening(); return; }
+    voice.stopSpeaking();
+    try {
+      const text = await voice.listen();
+      if (text) { setInput(text); await ask(text); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Microphone error");
     }
   }
 
@@ -118,12 +132,37 @@ export default function App() {
           onSubmit={(e) => { e.preventDefault(); ask(input); }}
         >
           <input
-            value={input}
+            value={voice.listening ? voice.interim || input : input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about an airport, a region, or a follow-up"
-            disabled={busy}
+            placeholder={voice.listening ? "Listening…" : "Ask about an airport, a region, or a follow-up"}
+            disabled={busy || voice.listening}
             aria-label="Message"
           />
+          {voice.canListen && (
+            <button
+              type="button"
+              className={`icon ${voice.listening ? "live" : ""}`}
+              onClick={onMic}
+              disabled={busy}
+              aria-pressed={voice.listening}
+              aria-label={voice.listening ? "Stop listening" : "Ask by voice"}
+              title={voice.listening ? "Stop" : "Ask by voice"}
+            >
+              {voice.listening ? "Stop" : "Mic"}
+            </button>
+          )}
+          {voice.canSpeak && (
+            <button
+              type="button"
+              className={`icon ${voice.speakEnabled ? "on" : ""}`}
+              onClick={() => { if (voice.speakEnabled) voice.stopSpeaking(); voice.setSpeakEnabled(!voice.speakEnabled); }}
+              aria-pressed={voice.speakEnabled}
+              aria-label="Read answers aloud"
+              title="Read answers aloud"
+            >
+              {voice.speakEnabled ? "Voice on" : "Voice off"}
+            </button>
+          )}
           <button type="submit" disabled={busy || !input.trim()}>Send</button>
         </form>
       </main>

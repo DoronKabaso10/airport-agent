@@ -97,4 +97,16 @@ AI is **not** used for: any KPI, ranking, comparison, threshold or estimate. If 
 - Min–max normalization is sensitive to the universe: adding one extreme airport re-scales every score. A future version should normalize against fixed reference bands.
 - The unmet-demand estimate has no confidence interval.
 - The offline mode's answers are templated; only the Gemini mode meets the "explain reasoning conversationally" bar.
-- Voice was scoped out; the chat endpoint is transport-agnostic, so a browser speech-to-text front end can be added without backend changes.
+- Voice is browser-side only (Web Speech API: speech-to-text for questions, text-to-speech for answers). Works in Chrome/Edge/Safari; Firefox lacks recognition and the mic button hides itself. Recognition audio is processed by the browser vendor, not by this app.
+
+## 8. Security and abuse
+
+**Blast radius by construction.** The model can only invoke seven read-only tools. There is no tool that writes to the database, touches the filesystem, or makes network calls, so a prompt injection cannot cause side effects — the worst outcome is a wrong or off-topic answer. All database access goes through the ORM with bound parameters; user text never reaches SQL. Tool arguments are clamped and whitelisted in the KPI layer (`limit ≤ 50`, `k ≤ 10`, `sort_by` from a fixed set, ≤ 10 codes), so a malicious argument from the model or a direct MCP client cannot cause runaway queries.
+
+**Direct prompt injection ("ignore your rules…").** Mitigated by scope rules in the system prompt and, more importantly, by a deterministic grounding check after every Gemini turn: the numbers in the answer are compared against the tool results; unmatched numbers, or an answer containing figures with no tool called, are flagged in the UI. The analyst always sees which tools ran.
+
+**Indirect injection via documents.** Ingested PDFs could contain instructions. Tool results are passed as function responses (data), and the prompt instructs the model to ignore embedded instructions and report them. This is a mitigation, not a guarantee; only ingest sources you control.
+
+**API surface.** No authentication or rate limiting — acceptable for a local demo, not for deployment, mainly because every chat turn spends Gemini quota. Session ids are server-issued; unknown client-supplied ids are not adopted. CORS is restricted to the dev origins. The API key lives in `backend/.env` (gitignored) and never reaches the browser. Messages are capped at 2,000 characters.
+
+**Before deploying:** put the API behind auth (or at least a shared token), add per-user rate limits, and turn the grounding warnings into a hard block for numeric claims.

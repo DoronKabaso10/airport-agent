@@ -109,3 +109,8 @@ blockquote footer { margin-top: 6px; color: var(--ink-2); font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 .warn { margin-top: 6px; font-size: 13px; color: #7a4a10; background: #fdf1de; padding: 6px 10px; border-radius: 4px; }
+.composer .icon { background: var(--white); color: var(--ink); border: 1px solid var(--line); }
+.composer .icon.on { border-color: var(--teal); color: var(--teal); }
+.composer .icon.live { border-color: var(--amber); color: var(--amber); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(217, 140, 31, 0.25); } }
+@media (prefers-reduced-motion: reduce) { .composer .icon.live { animation: none; } }
