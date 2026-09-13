@@ -57,14 +57,14 @@ export default function App() {
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagValue, setFlagValue] = useState("");
   const [flagNote, setFlagNote] = useState("");
-  const speakRef = useRef<(t: string) => void>(() => {});
+  const speakRef = useRef<(t: string) => void>(() => { });
   const triggerRef = useRef<HTMLElement | null>(null);
   const onSpeakReady = useCallback((fn: (t: string) => void) => { speakRef.current = fn; }, []);
 
   useEffect(() => {
     fetchHealth().then((h) => setMode(h.mode)).catch(() => setMode("unreachable"));
-    fetchRankings().then(setRankings).catch(() => {});
-    fetchSessions().then((r) => setSessions(r.sessions)).catch(() => {});
+    fetchRankings().then(setRankings).catch(() => { });
+    fetchSessions().then((r) => setSessions(r.sessions)).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export default function App() {
       if (firstTurn) setTitle(q.length > 60 ? q.slice(0, 60) + "…" : q);
       setHistory((h) => [...h, { role: "model", text: res.answer, tool_calls: res.tool_calls, warnings: res.warnings }]);
       speakRef.current(res.answer);
-      fetchSessions().then((r) => setSessions(r.sessions)).catch(() => {});
+      fetchSessions().then((r) => setSessions(r.sessions)).catch(() => { });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed");
     } finally { setBusy(false); }
@@ -187,7 +187,7 @@ export default function App() {
           </header>
 
           <MessageLog history={history} busy={busy} weights={weights} emptyPrompts={STARTERS} onPick={ask} mode={mode} />
-          {error && <p className="caveat caveat--error" role="alert">{error}. Is the backend running on port 8000?</p>}
+          {error && <p className="caveat caveat--error" role="alert">{error}. Is the backend running on port 8011?</p>}
           <Composer chips={chipsFor(last)} busy={busy} onSend={ask} onSpeakReady={onSpeakReady} />
         </main>
 

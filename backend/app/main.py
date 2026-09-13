@@ -1,7 +1,7 @@
 """
 FastAPI — conversation/session layer + JSON API for the React UI.
 
-    uvicorn app.main:app --reload --port 8000
+    uvicorn app.main:app --reload --port 8011
 
 Endpoints
   POST /api/chat          {session_id, message} -> {answer, tool_calls, state, mode}
@@ -11,6 +11,7 @@ Endpoints
   DELETE /api/session/{session_id}
 Static: serves ../frontend/dist if it exists (production build).
 """
+
 from __future__ import annotations
 
 import os
@@ -34,13 +35,20 @@ agent = Agent()
 async def lifespan(_: FastAPI):
     init_db()
     await agent.start()
-    print(f"[agent] mode={'gemini (' + os.getenv('GEMINI_MODEL', 'gemini-2.5-flash') + ')' if agent._gemini else 'offline'} tools={len(agent.mcp.tools)}")
+    print(
+        f"[agent] mode={'gemini (' + os.getenv('GEMINI_MODEL', 'gemini-2.5-flash') + ')' if agent._gemini else 'offline'} tools={len(agent.mcp.tools)}"
+    )
     yield
     await agent.stop()
 
 
 app = FastAPI(title="Aeroledger — airport investment agent", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","), allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5175").split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class ChatRequest(BaseModel):
@@ -50,14 +58,21 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest) -> dict:
-    sid = req.session_id if req.session_id in agent.sessions else str(uuid.uuid4())  # unknown ids never adopted
+    sid = (
+        req.session_id if req.session_id in agent.sessions else str(uuid.uuid4())
+    )  # unknown ids never adopted
     turn = await agent.ask(sid, req.message)
     return {
-        "session_id": sid, "answer": turn.answer, "mode": turn.mode, "warnings": turn.warnings,
+        "session_id": sid,
+        "answer": turn.answer,
+        "mode": turn.mode,
+        "warnings": turn.warnings,
         "tool_calls": turn.tool_calls,
         "state": {
-            "selected_airports": turn.state.selected_airports, "selected_region": turn.state.selected_region,
-            "previous_ranking": turn.state.previous_ranking, "last_analysis_type": turn.state.last_analysis_type,
+            "selected_airports": turn.state.selected_airports,
+            "selected_region": turn.state.selected_region,
+            "previous_ranking": turn.state.previous_ranking,
+            "last_analysis_type": turn.state.last_analysis_type,
         },
     }
 
@@ -66,12 +81,20 @@ SCORE_BAR = 60.0  # "clears the bar" threshold shown in the UI
 
 
 def _session_summary(sid: str, st) -> dict:
-    return {"id": sid, "title": st.title, "turns": st.turns, "created_at": st.created_at, "updated_at": st.updated_at}
+    return {
+        "id": sid,
+        "title": st.title,
+        "turns": st.turns,
+        "created_at": st.created_at,
+        "updated_at": st.updated_at,
+    }
 
 
 @app.get("/api/sessions")
 def sessions() -> dict:
-    items = [_session_summary(sid, st) for sid, st in agent.sessions.items() if st.turns > 0]
+    items = [
+        _session_summary(sid, st) for sid, st in agent.sessions.items() if st.turns > 0
+    ]
     return {"sessions": sorted(items, key=lambda x: -x["updated_at"])}
 
 
@@ -80,9 +103,16 @@ def session_detail(session_id: str) -> dict:
     st = agent.sessions.get(session_id)
     if st is None:
         raise HTTPException(404, "Unknown session")
-    return {**_session_summary(session_id, st), "history": st.history,
-            "state": {"selected_airports": st.selected_airports, "selected_region": st.selected_region,
-                      "previous_ranking": st.previous_ranking, "last_analysis_type": st.last_analysis_type}}
+    return {
+        **_session_summary(session_id, st),
+        "history": st.history,
+        "state": {
+            "selected_airports": st.selected_airports,
+            "selected_region": st.selected_region,
+            "previous_ranking": st.previous_ranking,
+            "last_analysis_type": st.last_analysis_type,
+        },
+    }
 
 
 class Flag(BaseModel):
@@ -128,7 +158,11 @@ def airport(code: str) -> dict:
     r = kpi.get_airport_metrics([code])
     if not r["airports"]:
         raise HTTPException(404, f"Unknown airport {code}")
-    return {**r["airports"][0], "unmet_demand": kpi.analyze_unmet_demand(code), "long_haul": kpi.long_haul_percentage(code)}
+    return {
+        **r["airports"][0],
+        "unmet_demand": kpi.analyze_unmet_demand(code),
+        "long_haul": kpi.long_haul_percentage(code),
+    }
 
 
 @app.get("/api/weights")
@@ -138,7 +172,11 @@ def weights() -> dict:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "mode": "gemini" if agent._gemini else "offline", "tools": [t.name for t in agent.mcp.tools]}
+    return {
+        "ok": True,
+        "mode": "gemini" if agent._gemini else "offline",
+        "tools": [t.name for t in agent.mcp.tools],
+    }
 
 
 dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"

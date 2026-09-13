@@ -1,7 +1,14 @@
-import { defineConfig } from "vite";
+import { defineConfig, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
+const config: UserConfig = {
   plugins: [react()],
-  server: { proxy: { "/api": "http://localhost:8000" } },
-});
+  server: {
+    port: 5175,
+    proxy: {
+      "/api": "http://localhost:8011",
+    },
+  },
+};
+
+export default defineConfig(config);

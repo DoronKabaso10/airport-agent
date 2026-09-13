@@ -11,12 +11,12 @@ cd backend
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python scripts/build_evidence.py                   # index sample evidence notes (add PDFs as args)
-uvicorn app.main:app --reload --port 8000          # creates + seeds airport_agent.db on first start
+uvicorn app.main:app --reload --port 8011          # creates + seeds airport_agent.db on first start
 
 # frontend (dev)
 cd ../frontend
-npm install && npm run dev                         # http://localhost:5173, proxies /api to :8000
-# or build once and let FastAPI serve it at http://localhost:8000
+npm install && npm run dev                         # http://localhost:5175, proxies /api to :8011
+# or build once and let FastAPI serve it at http://localhost:8011
 npm run build
 ```
 
