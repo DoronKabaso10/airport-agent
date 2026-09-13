@@ -40,6 +40,7 @@ python scripts/load_bts_t100.py …    # replace sample data with BTS T-100 / On
 ```
 
 ## Layout
+<img width="1872" height="856" alt="image" src="https://github.com/user-attachments/assets/3273f6d1-ce5a-44cc-8c4d-928516888c2c" />
 
 ```
 backend/app/db.py          SQLAlchemy models, seed loader (SQLite or PostgreSQL)
