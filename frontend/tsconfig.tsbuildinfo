@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/voice.ts"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/composer.tsx","./src/messagelog.tsx","./src/api.ts","./src/main.tsx","./src/memo.ts","./src/voice.ts"],"version":"5.9.3"}

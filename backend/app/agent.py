@@ -15,6 +15,7 @@ import json
 import os
 import re
 import sys
+import time
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,7 +36,9 @@ Rules you must follow:
    If a tool has no data, say so.
 2. Use `search_airports` first whenever the user names a place instead of a 3-letter code.
 3. For rankings use `rank_airports`; for two or more named airports use `compare_airports`;
-   for "unmet demand" use `analyze_unmet_demand`; for long-haul questions use `long_haul_percentage`.
+   for "unmet demand" use `analyze_unmet_demand`; for long-haul questions use `long_haul_percentage`;
+   for "right now / today / currently" congestion use `live_airport_status` (live FAA feed) and say
+   clearly that it is a real-time snapshot, distinct from the annual KPIs.
 4. For "why" questions, pair the quantitative tool with `search_evidence` (pass airport_code) and
    attribute qualitative claims to the document_title returned. If no evidence is found, say the
    explanation is based on the KPI drivers only.
@@ -83,11 +86,15 @@ def ungrounded_numbers(answer: str, tool_calls: list[dict]) -> list[str]:
 
 @dataclass
 class ConversationState:
+    title: str = "New session"
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+    turns: int = 0
     selected_airports: list[str] = field(default_factory=list)
     selected_region: str | None = None
     previous_ranking: list[str] = field(default_factory=list)
     last_analysis_type: str | None = None
-    history: list[dict] = field(default_factory=list)  # {"role": "user"|"model", "text": str}
+    history: list[dict] = field(default_factory=list)  # {"role": "user"|"model", "text": str, "tool_calls"?, "warnings"?}
 
     def summary(self) -> str:
         return json.dumps({
@@ -213,9 +220,13 @@ class Agent:
             bad = ungrounded_numbers(turn.answer, turn.tool_calls)
             if bad:
                 turn.warnings.append("Numbers not found in any tool result: " + ", ".join(bad[:8]))
+        if state.turns == 0:
+            state.title = (message[:60] + "…") if len(message) > 60 else message
+        state.turns += 1
+        state.updated_at = time.time()
         state.history.append({"role": "user", "text": message})
-        state.history.append({"role": "model", "text": turn.answer})
-        state.history = state.history[-20:]
+        state.history.append({"role": "model", "text": turn.answer, "tool_calls": turn.tool_calls, "warnings": turn.warnings})
+        state.history = state.history[-40:]
         return turn
 
     # ------------------------------------------------------------------ Gemini
