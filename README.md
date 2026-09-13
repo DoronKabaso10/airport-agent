@@ -40,6 +40,8 @@ python scripts/load_bts_t100.py …    # replace sample data with BTS T-100 / On
 ```
 
 ## Layout
+<img width="1275" height="852" alt="image" src="https://github.com/user-attachments/assets/51e38919-fb54-443a-96ac-b721e8cc3b74" />
+
 <img width="1872" height="856" alt="image" src="https://github.com/user-attachments/assets/3273f6d1-ce5a-44cc-8c4d-928516888c2c" />
 
 ```
